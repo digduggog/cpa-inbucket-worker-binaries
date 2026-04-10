@@ -86,6 +86,24 @@ if [[ -z "$DOMAINS_API_URL" ]]; then
   DOMAINS_API_URL="${CPA_BASE_URL%/}/v0/management/domains"
 fi
 
+detect_ca_bundle() {
+  local candidates=(
+    "/etc/ssl/certs/ca-certificates.crt"
+    "/etc/pki/tls/certs/ca-bundle.crt"
+    "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
+    "/etc/ssl/cert.pem"
+    "/etc/ssl/ca-bundle.pem"
+  )
+  local candidate
+  for candidate in "${candidates[@]}"; do
+    if [[ -r "$candidate" ]]; then
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
 build_release_base() {
   if [[ "$VERSION" == "latest" ]]; then
     printf 'https://github.com/%s/%s/releases/latest/download' "$REPO_OWNER" "$REPO_NAME"
@@ -107,6 +125,7 @@ json_escape() {
 RELEASE_BASE="$(build_release_base)"
 BINARY_URL="${RELEASE_BASE}/${ASSET_NAME}"
 CHECKSUM_URL="${RELEASE_BASE}/SHA256SUMS.txt"
+CA_BUNDLE="$(detect_ca_bundle || true)"
 
 mkdir -p "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR/codex_tokens"
@@ -195,8 +214,18 @@ WorkingDirectory=${INSTALL_DIR}
 ExecStart=${INSTALL_DIR}/${COMPONENT} --config ${INSTALL_DIR}/config.json
 Environment=LANG=C.UTF-8
 Environment=LC_ALL=C.UTF-8
+EOF
+  if [[ -n "$CA_BUNDLE" ]]; then
+    cat >> "/etc/systemd/system/${SERVICE_NAME}.service" <<EOF
+Environment=SSL_CERT_FILE=${CA_BUNDLE}
+Environment=CURL_CA_BUNDLE=${CA_BUNDLE}
+Environment=REQUESTS_CA_BUNDLE=${CA_BUNDLE}
+EOF
+  fi
+  cat >> "/etc/systemd/system/${SERVICE_NAME}.service" <<EOF
 Restart=always
 RestartSec=5
+LimitNOFILE=65535
 User=root
 
 [Install]
@@ -206,21 +235,35 @@ EOF
   systemctl enable --now "${SERVICE_NAME}.service"
   echo "Systemd service started."
   echo "Service: ${SERVICE_NAME}.service"
+  if [[ -n "$CA_BUNDLE" ]]; then
+    echo "CA bundle: ${CA_BUNDLE}"
+  fi
   echo "Check:"
   echo "  systemctl status ${SERVICE_NAME}.service"
   echo "  journalctl -u ${SERVICE_NAME}.service -f"
 elif [[ "$BACKGROUND" == "1" ]]; then
   (
     cd "$INSTALL_DIR"
+    if [[ -n "$CA_BUNDLE" ]]; then
+      export SSL_CERT_FILE="$CA_BUNDLE"
+      export CURL_CA_BUNDLE="$CA_BUNDLE"
+      export REQUESTS_CA_BUNDLE="$CA_BUNDLE"
+    fi
     LANG=C.UTF-8 LC_ALL=C.UTF-8 "./$COMPONENT" --config "$INSTALL_DIR/config.json" --background >/dev/null
   )
   echo "Background worker started."
   echo "Log: $INSTALL_DIR/worker.log"
   echo "PID: $INSTALL_DIR/worker.pid"
+  if [[ -n "$CA_BUNDLE" ]]; then
+    echo "CA bundle: $CA_BUNDLE"
+  fi
   echo "Check:"
   echo "  tail -f $INSTALL_DIR/worker.log"
   echo "  cat $INSTALL_DIR/worker.pid"
 else
+  if [[ -n "$CA_BUNDLE" ]]; then
+    echo "CA bundle: $CA_BUNDLE"
+  fi
   echo "Start command:"
   echo "  cd \"$INSTALL_DIR\" && ./$COMPONENT --config \"$INSTALL_DIR/config.json\""
 fi
