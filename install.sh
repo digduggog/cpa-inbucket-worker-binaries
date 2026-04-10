@@ -13,6 +13,7 @@ BACKGROUND="0"
 SYSTEMD="0"
 SERVICE_NAME="dist-register-inbucket"
 PROXY=""
+MAIL_PROVIDER="gptmail_vip_moe_temp_org_mix"
 CPA_BASE_URL=""
 CPA_TOKEN=""
 MAIL_API_URL="https://mail.example.com/"
@@ -33,6 +34,7 @@ Options:
   --service-name NAME
   --threads N
   --proxy URL
+  --mail-provider NAME
   --cpa-base-url URL
   --cpa-token TOKEN
   --mail-api-url URL
@@ -52,6 +54,7 @@ while [[ $# -gt 0 ]]; do
     --service-name) SERVICE_NAME="${2:-}"; shift 2 ;;
     --threads) THREADS="${2:-}"; shift 2 ;;
     --proxy) PROXY="${2:-}"; shift 2 ;;
+    --mail-provider) MAIL_PROVIDER="${2:-}"; shift 2 ;;
     --cpa-base-url) CPA_BASE_URL="${2:-}"; shift 2 ;;
     --cpa-token) CPA_TOKEN="${2:-}"; shift 2 ;;
     --mail-api-url) MAIL_API_URL="${2:-}"; shift 2 ;;
@@ -80,6 +83,13 @@ fi
 if [[ -z "$CPA_BASE_URL" || -z "$CPA_TOKEN" ]]; then
   echo "--cpa-base-url and --cpa-token are required." >&2
   exit 1
+fi
+
+if [[ "$MAIL_PROVIDER" == "inbucket_web" ]]; then
+  if [[ -z "$MAIL_API_URL" || -z "$MAIL_API_KEY" ]]; then
+    echo "mail-provider=inbucket_web 时，--mail-api-url 和 --mail-api-key 必填。" >&2
+    exit 1
+  fi
 fi
 
 if [[ -z "$DOMAINS_API_URL" ]]; then
@@ -167,6 +177,7 @@ cat > "$INSTALL_DIR/config.json" <<EOF
   "proxy": "$(json_escape "$PROXY")",
   "verbose_logs": false,
   "oauth_required": true,
+  "mail_provider": "$(json_escape "$MAIL_PROVIDER")",
   "cpa_base_url": "$(json_escape "$CPA_BASE_URL")",
   "cpa_token": "$(json_escape "$CPA_TOKEN")",
   "upload_api_proxy": "",

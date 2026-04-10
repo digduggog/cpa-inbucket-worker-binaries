@@ -32,10 +32,9 @@ sudo bash -c 'curl -fsSL https://raw.githubusercontent.com/digduggog/cpa-inbucke
 --install-dir "/dan-runtime" \
 --systemd \
 --proxy "socks5://127.0.0.1:7890" \
+--mail-provider "gptmail_vip_moe_temp_org_mix" \
 --cpa-base-url "https://cpa.example.com/" \
 --cpa-token "replace-me" \
---mail-api-url "https://mail.example.com/" \
---mail-api-key "replace-me" \
 --threads 20'
 ```
 
@@ -43,6 +42,8 @@ sudo bash -c 'curl -fsSL https://raw.githubusercontent.com/digduggog/cpa-inbucke
 
 - 不传 `--domains-api-url` 时，会自动使用  
   ``${cpa_base_url%/}/v0/management/domains``
+- 不传 `--mail-provider` 时，默认就是 `gptmail_vip_moe_temp_org_mix`
+- 只有 `--mail-provider inbucket_web` 时，才需要传 `--mail-api-url` / `--mail-api-key`
 
 ## 重要约束
 

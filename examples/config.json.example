@@ -4,6 +4,7 @@
   "proxy": "",
   "verbose_logs": false,
   "oauth_required": true,
+  "mail_provider": "gptmail_vip_moe_temp_org_mix",
   "cpa_base_url": "https://cpa.example.com/",
   "cpa_token": "replace-me",
   "upload_api_proxy": "",
