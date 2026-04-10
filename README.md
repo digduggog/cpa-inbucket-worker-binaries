@@ -39,6 +39,11 @@ sudo bash -c 'curl -fsSL https://raw.githubusercontent.com/digduggog/cpa-inbucke
 --threads 20'
 ```
 
+说明：
+
+- 不传 `--domains-api-url` 时，会自动使用  
+  ``${cpa_base_url%/}/v0/management/domains``
+
 ## 重要约束
 
 - 公开仓只放 installer / examples / binaries / checksums

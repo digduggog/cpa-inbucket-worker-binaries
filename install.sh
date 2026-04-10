@@ -18,7 +18,7 @@ CPA_TOKEN=""
 MAIL_API_URL="https://mail.example.com/"
 MAIL_API_KEY="replace-me"
 MAIL_API_AUTH_MODE="bearer"
-DOMAINS_API_URL="https://cpa.example.com/v0/management/domains"
+DOMAINS_API_URL=""
 
 usage() {
   cat <<'EOF'
@@ -80,6 +80,10 @@ fi
 if [[ -z "$CPA_BASE_URL" || -z "$CPA_TOKEN" ]]; then
   echo "--cpa-base-url and --cpa-token are required." >&2
   exit 1
+fi
+
+if [[ -z "$DOMAINS_API_URL" ]]; then
+  DOMAINS_API_URL="${CPA_BASE_URL%/}/v0/management/domains"
 fi
 
 build_release_base() {
