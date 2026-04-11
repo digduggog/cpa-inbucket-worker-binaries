@@ -46,7 +46,9 @@ sudo bash -c 'curl -fsSL https://raw.githubusercontent.com/digduggog/cpa-inbucke
   ``${cpa_base_url%/}/v0/management/domains``
 - 不传 `--mail-provider` 时，默认就是 `gptmail_vip_moe_temp_org_mix`
 - 不传 `--gptmail-rate-limit-rps` / `--gptmail-rate-limit-burst` 时，默认 `8 / 16`
-- 只有 `--mail-provider inbucket_web` 时，才需要传 `--mail-api-url` / `--mail-api-key`
+- `--proxy` 只用于 OpenAI 注册 / OAuth，邮件 provider 请求默认直连
+- 传了真实 `--mail-api-url` / `--mail-api-key` 后，默认 mix 会额外轮到 `inbucket_web`
+- 只有 `--mail-provider inbucket_web` 时，`--mail-api-url` / `--mail-api-key` 是硬性必填
 
 ## 重要约束
 

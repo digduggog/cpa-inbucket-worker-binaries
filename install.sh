@@ -35,7 +35,7 @@ Options:
   --systemd
   --service-name NAME
   --threads N
-  --proxy URL
+  --proxy URL                  # 仅用于 OpenAI 注册 / OAuth
   --mail-provider NAME
   --gptmail-rate-limit-rps FLOAT
   --gptmail-rate-limit-burst INT
@@ -219,6 +219,7 @@ echo
 echo "Installed to: $INSTALL_DIR"
 echo "Binary: $INSTALL_DIR/$COMPONENT"
 echo "Config: $INSTALL_DIR/config.json"
+echo "Proxy scope: OpenAI registration/OAuth only; mail providers run direct."
 
 if [[ "$SYSTEMD" == "1" ]]; then
   if [[ "$(id -u)" -ne 0 ]]; then
@@ -267,6 +268,7 @@ EOF
     echo "CA bundle: ${CA_BUNDLE}"
   fi
   echo "GPTMail rate limit: rps=${GPTMAIL_RATE_LIMIT_RPS}, burst=${GPTMAIL_RATE_LIMIT_BURST}"
+  echo "Hint: supplying real --mail-api-url/--mail-api-key enables extra inbucket_web candidate in default mix."
   echo "Check:"
   echo "  systemctl status ${SERVICE_NAME}.service"
   echo "  journalctl -u ${SERVICE_NAME}.service -f"
@@ -286,6 +288,7 @@ elif [[ "$BACKGROUND" == "1" ]]; then
   echo "Log: $INSTALL_DIR/worker.log"
   echo "PID: $INSTALL_DIR/worker.pid"
   echo "GPTMail rate limit: rps=${GPTMAIL_RATE_LIMIT_RPS}, burst=${GPTMAIL_RATE_LIMIT_BURST}"
+  echo "Hint: supplying real --mail-api-url/--mail-api-key enables extra inbucket_web candidate in default mix."
   if [[ -n "$CA_BUNDLE" ]]; then
     echo "CA bundle: $CA_BUNDLE"
   fi
@@ -297,6 +300,7 @@ else
     echo "CA bundle: $CA_BUNDLE"
   fi
   echo "GPTMail rate limit (manual run): rps=${GPTMAIL_RATE_LIMIT_RPS}, burst=${GPTMAIL_RATE_LIMIT_BURST}"
+  echo "Hint: supplying real --mail-api-url/--mail-api-key enables extra inbucket_web candidate in default mix."
   echo "Start command:"
   echo "  cd \"$INSTALL_DIR\" && GPTMAIL_RATE_LIMIT_RPS=${GPTMAIL_RATE_LIMIT_RPS} GPTMAIL_RATE_LIMIT_BURST=${GPTMAIL_RATE_LIMIT_BURST} ./$COMPONENT --config \"$INSTALL_DIR/config.json\""
 fi
