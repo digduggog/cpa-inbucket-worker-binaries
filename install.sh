@@ -261,8 +261,14 @@ User=root
 WantedBy=multi-user.target
 EOF
   systemctl daemon-reload
-  systemctl enable --now "${SERVICE_NAME}.service"
-  echo "Systemd service started."
+  systemctl enable "${SERVICE_NAME}.service" >/dev/null 2>&1 || true
+  if systemctl is-active --quiet "${SERVICE_NAME}.service"; then
+    systemctl restart "${SERVICE_NAME}.service"
+    echo "Systemd service restarted."
+  else
+    systemctl start "${SERVICE_NAME}.service"
+    echo "Systemd service started."
+  fi
   echo "Service: ${SERVICE_NAME}.service"
   if [[ -n "$CA_BUNDLE" ]]; then
     echo "CA bundle: ${CA_BUNDLE}"
