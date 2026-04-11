@@ -14,6 +14,8 @@ SYSTEMD="0"
 SERVICE_NAME="dist-register-inbucket"
 PROXY=""
 MAIL_PROVIDER="gptmail_vip_moe_temp_org_mix"
+GPTMAIL_RATE_LIMIT_RPS="8"
+GPTMAIL_RATE_LIMIT_BURST="16"
 CPA_BASE_URL=""
 CPA_TOKEN=""
 MAIL_API_URL="https://mail.example.com/"
@@ -35,6 +37,8 @@ Options:
   --threads N
   --proxy URL
   --mail-provider NAME
+  --gptmail-rate-limit-rps FLOAT
+  --gptmail-rate-limit-burst INT
   --cpa-base-url URL
   --cpa-token TOKEN
   --mail-api-url URL
@@ -55,6 +59,8 @@ while [[ $# -gt 0 ]]; do
     --threads) THREADS="${2:-}"; shift 2 ;;
     --proxy) PROXY="${2:-}"; shift 2 ;;
     --mail-provider) MAIL_PROVIDER="${2:-}"; shift 2 ;;
+    --gptmail-rate-limit-rps) GPTMAIL_RATE_LIMIT_RPS="${2:-}"; shift 2 ;;
+    --gptmail-rate-limit-burst) GPTMAIL_RATE_LIMIT_BURST="${2:-}"; shift 2 ;;
     --cpa-base-url) CPA_BASE_URL="${2:-}"; shift 2 ;;
     --cpa-token) CPA_TOKEN="${2:-}"; shift 2 ;;
     --mail-api-url) MAIL_API_URL="${2:-}"; shift 2 ;;
@@ -82,6 +88,15 @@ fi
 
 if [[ -z "$CPA_BASE_URL" || -z "$CPA_TOKEN" ]]; then
   echo "--cpa-base-url and --cpa-token are required." >&2
+  exit 1
+fi
+
+if ! [[ "$GPTMAIL_RATE_LIMIT_RPS" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+  echo "--gptmail-rate-limit-rps 必须是正数。" >&2
+  exit 1
+fi
+if ! [[ "$GPTMAIL_RATE_LIMIT_BURST" =~ ^[1-9][0-9]*$ ]]; then
+  echo "--gptmail-rate-limit-burst 必须是正整数。" >&2
   exit 1
 fi
 
@@ -225,6 +240,8 @@ WorkingDirectory=${INSTALL_DIR}
 ExecStart=${INSTALL_DIR}/${COMPONENT} --config ${INSTALL_DIR}/config.json
 Environment=LANG=C.UTF-8
 Environment=LC_ALL=C.UTF-8
+Environment=GPTMAIL_RATE_LIMIT_RPS=${GPTMAIL_RATE_LIMIT_RPS}
+Environment=GPTMAIL_RATE_LIMIT_BURST=${GPTMAIL_RATE_LIMIT_BURST}
 EOF
   if [[ -n "$CA_BUNDLE" ]]; then
     cat >> "/etc/systemd/system/${SERVICE_NAME}.service" <<EOF
@@ -249,6 +266,7 @@ EOF
   if [[ -n "$CA_BUNDLE" ]]; then
     echo "CA bundle: ${CA_BUNDLE}"
   fi
+  echo "GPTMail rate limit: rps=${GPTMAIL_RATE_LIMIT_RPS}, burst=${GPTMAIL_RATE_LIMIT_BURST}"
   echo "Check:"
   echo "  systemctl status ${SERVICE_NAME}.service"
   echo "  journalctl -u ${SERVICE_NAME}.service -f"
@@ -260,11 +278,14 @@ elif [[ "$BACKGROUND" == "1" ]]; then
       export CURL_CA_BUNDLE="$CA_BUNDLE"
       export REQUESTS_CA_BUNDLE="$CA_BUNDLE"
     fi
+    export GPTMAIL_RATE_LIMIT_RPS="$GPTMAIL_RATE_LIMIT_RPS"
+    export GPTMAIL_RATE_LIMIT_BURST="$GPTMAIL_RATE_LIMIT_BURST"
     LANG=C.UTF-8 LC_ALL=C.UTF-8 "./$COMPONENT" --config "$INSTALL_DIR/config.json" --background >/dev/null
   )
   echo "Background worker started."
   echo "Log: $INSTALL_DIR/worker.log"
   echo "PID: $INSTALL_DIR/worker.pid"
+  echo "GPTMail rate limit: rps=${GPTMAIL_RATE_LIMIT_RPS}, burst=${GPTMAIL_RATE_LIMIT_BURST}"
   if [[ -n "$CA_BUNDLE" ]]; then
     echo "CA bundle: $CA_BUNDLE"
   fi
@@ -275,6 +296,7 @@ else
   if [[ -n "$CA_BUNDLE" ]]; then
     echo "CA bundle: $CA_BUNDLE"
   fi
+  echo "GPTMail rate limit (manual run): rps=${GPTMAIL_RATE_LIMIT_RPS}, burst=${GPTMAIL_RATE_LIMIT_BURST}"
   echo "Start command:"
-  echo "  cd \"$INSTALL_DIR\" && ./$COMPONENT --config \"$INSTALL_DIR/config.json\""
+  echo "  cd \"$INSTALL_DIR\" && GPTMAIL_RATE_LIMIT_RPS=${GPTMAIL_RATE_LIMIT_RPS} GPTMAIL_RATE_LIMIT_BURST=${GPTMAIL_RATE_LIMIT_BURST} ./$COMPONENT --config \"$INSTALL_DIR/config.json\""
 fi
